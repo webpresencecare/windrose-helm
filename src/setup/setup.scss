@@ -1,0 +1,100 @@
+// Windrose Helm, Set up screen.
+
+.windrose-helm-setup {
+	max-width: 52rem;
+
+	h2:focus {
+		outline: none;
+	}
+}
+
+.windrose-helm-setup__steps ol {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.5rem;
+	margin: 1rem 0;
+	padding: 0;
+	list-style: none;
+
+	[aria-current="step"] {
+		font-weight: 600;
+		text-decoration: none;
+	}
+}
+
+.windrose-helm-setup__card {
+	margin-block-end: 1.5rem;
+
+	.components-toggle-control,
+	.components-checkbox-control,
+	.components-base-control {
+		margin-block-end: 1.25rem;
+	}
+
+	fieldset {
+		margin-block-start: 1.5rem;
+	}
+
+	legend {
+		margin-block-end: 0.75rem;
+		font-weight: 600;
+	}
+
+	textarea.code {
+		width: 100%;
+		font-family: monospace;
+	}
+}
+
+.windrose-helm-setup__language-list {
+	margin: 1rem 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		align-items: flex-start;
+
+		.components-base-control {
+			flex: 1 1 18rem;
+		}
+
+		.components-button {
+			margin-block-start: 1.6rem;
+		}
+	}
+}
+
+.windrose-helm-setup__buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-block-start: 1.5rem;
+}
+
+.windrose-helm-setup__review,
+.windrose-helm-setup__progress {
+	margin-inline-start: 1.5rem;
+
+	li {
+		margin-block-end: 0.5rem;
+	}
+}
+
+.windrose-helm-setup__progress {
+
+	.components-spinner {
+		margin: 0 0.5rem;
+		vertical-align: middle;
+	}
+
+	.failed strong {
+		color: #cc1818;
+	}
+
+	.done strong {
+		color: #007017;
+	}
+}

@@ -1,0 +1,92 @@
+// Windrose Helm network admin screen.
+
+// DataViews styles, inlined from the package
+// (DataViews is bundled, not provided by WordPress).
+@use "@wordpress/dataviews/build-style/style";
+
+.windrose-helm {
+	max-width: 1200px;
+
+	.windrose-helm__notice {
+		margin: 16px 0;
+	}
+
+	.windrose-helm__tabs .components-tab-panel__tabs {
+		border-bottom: 1px solid #dcdcde;
+		margin-bottom: 24px;
+	}
+
+	.windrose-helm__panel {
+		display: grid;
+		gap: 24px;
+	}
+
+	.components-card__header {
+		gap: 16px;
+	}
+
+	.windrose-helm__card-title {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+		line-height: 1.4;
+	}
+
+	.windrose-helm__intro {
+		margin: 0;
+		font-size: 14px;
+		max-width: 720px;
+	}
+
+	.windrose-helm__table.components-card__body {
+		padding-top: 0;
+	}
+
+	.windrose-helm__switches {
+		display: grid;
+		gap: 24px;
+		max-width: 720px;
+	}
+
+	.windrose-helm__status {
+		margin: 0;
+		list-style: disc;
+		padding-inline-start: 20px;
+	}
+
+	.dataviews-wrapper code {
+		font-size: 12px;
+		background: none;
+		padding: 0;
+		word-break: break-all;
+	}
+}
+
+// Also used in modals, which render outside .windrose-helm.
+
+.windrose-helm__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.windrose-helm__row--end {
+	justify-content: flex-end;
+}
+
+.windrose-helm__token-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-end;
+	max-width: 720px;
+
+	.components-base-control {
+		flex: 1 1 320px;
+	}
+}
+
+.windrose-helm__modal-actions {
+	margin-top: 24px;
+}

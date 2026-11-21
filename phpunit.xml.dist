@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- PHPUnit in multisite mode, on a test database (setup in README.md, Development; on GitHub: ci.yml). -->
+<phpunit
+	bootstrap="tests/phpunit/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertDeprecationsToExceptions="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+>
+	<php>
+		<const name="WP_TESTS_MULTISITE" value="1"/>
+		<ini name="error_reporting" value="-1"/>
+	</php>
+	<testsuites>
+		<testsuite name="windrose-helm">
+			<directory suffix="Test.php">tests/phpunit</directory>
+		</testsuite>
+	</testsuites>
+</phpunit>
