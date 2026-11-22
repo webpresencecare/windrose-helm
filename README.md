@@ -1,5 +1,7 @@
 # Windrose Helm
 
+> Part of **[the Windrose Suite](https://www.webpresencecare.com/windrose/)**: WordPress for networks of sites, private by default, multilingual if you want it, free for everyone. Each Windrose plugin and theme works on its own.
+
 The base plugin of the Windrose Suite, for WordPress multisite networks: block-only defaults, privacy switches with a log of outgoing requests, a wordpress.org switch, updates for Windrose plugins from GitHub, recommended plugins and Site Health checks.
 
 Requires WordPress 7.2 and PHP 8.4. Network-activated only.
@@ -136,6 +138,22 @@ PHPUnit runs in multisite mode on its own test database, never on a site's data.
 For another Windrose plugin, copy `.github/workflows/`, `composer.json` (rename), `phpunit.xml.dist`, `phpcs.xml.dist` (text domain), `phpstan.neon.dist`, `tests/phpunit/bootstrap.php` (main file name) and `bin/install-wp-tests.sh`, `bin/build-zip.sh`.
 
 Bunny Fonts data: `python3 -I bin/bunny-fonts.py build` (about 1,850 requests to fonts.bunny.net, three at a time; then commit the three files of `data/`); `reformat` rewrites both index files from the JSON index, `python3 -I bin/bunny-fonts.py check` (no network; CI). Refresh it before a release when Bunny's list has changed.
+
+## Status
+
+Updates come from this repository's GitHub releases: each download is checked against the sha256 digest GitHub publishes before it is installed. A wordpress.org version may come later, after independent reviews.
+
+## Security
+
+Please report vulnerabilities privately, never in a public issue: see [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+Reviews, tests and issues are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## How this code is written
+
+I write this plugin with Claude Code (Anthropic's AI coding assistant): I design each feature, test it on real sites and review every release. Commits written with Claude say so in a `Co-Authored-By` line. Human review is especially welcome.
 
 ## Licence
 

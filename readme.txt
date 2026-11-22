@@ -1,5 +1,5 @@
 === Windrose Helm ===
-Contributors: patriciabt
+Contributors: patricia70
 Tags: multisite, privacy, block themes, updates, site health
 Requires at least: 7.2
 Tested up to: 7.2
@@ -27,6 +27,12 @@ Site Health gains tests for block themes, classic editing plugins, page builders
 
 Windrose Helm works on networks of sites. Activated on a single site, it offers Tools, Make a network: it turns the site into a network without editing files by hand (or shows the lines when it may not write them), keeps the post address structure with /blog in front and redirects the old addresses, then opens Set up. Copies of wp-config.php and .htaccess as they were are saved first (wp-config.backup.php, .htaccess.backup), to delete once everything works.
 
+Windrose Helm is part of the Windrose Suite, a free set of plugins and themes for WordPress networks: https://www.webpresencecare.com/windrose/ . Each Windrose plugin and theme works on its own.
+
+Source code, issues and build steps: https://github.com/webpresencecare/windrose-helm
+
+Security: please report vulnerabilities privately through GitHub: https://github.com/webpresencecare/windrose-helm/security/advisories/new . Never in a public support thread.
+
 == External services ==
 
 Windrose Helm itself sends nothing about visitors. It contacts these services:
@@ -44,6 +50,12 @@ The request log keeps server addresses and paths only, never query strings, cont
 == Uninstall ==
 
 Uninstalling removes the network options of Windrose Helm (switches, blocked hosts, request log, recommended plugins list, set-up state).
+
+== Frequently Asked Questions ==
+
+= Is this plugin written with AI? =
+
+Yes. I write the Windrose plugins and themes with Claude Code, Anthropic's AI coding assistant: I design each feature, test it on real sites and review every release, and every commit written with Claude says so. Independent reviews are welcome on GitHub.
 
 == Changelog ==
 
