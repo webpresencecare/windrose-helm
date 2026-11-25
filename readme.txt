@@ -4,7 +4,7 @@ Tags: multisite, privacy, block themes, updates, site health
 Requires at least: 7.2
 Tested up to: 7.2
 Requires PHP: 8.4
-Stable tag: 0.6.3
+Stable tag: 0.6.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,11 @@ Uninstalling removes the network options of Windrose Helm (switches, blocked hos
 Yes. I write the Windrose plugins and themes with Claude Code, Anthropic's AI coding assistant: I design each feature, test it on real sites and review every release, and every commit written with Claude says so. Independent reviews are welcome on GitHub.
 
 == Changelog ==
+
+= 0.6.4 =
+* Windrose Common 1.4.0: Files, for reading, writing and copying uploads and temporary files through WordPress's Filesystem API.
+* Make a network and Switch to subdomains change wp-config.php through WordPress's Filesystem API, only where WordPress may write files directly; elsewhere they show the lines to add by hand. wp-config.php and its backup copy keep their file permissions.
+* Code: the generated script files (`*.asset.php`) stop when opened directly; the network constants are written without `var_export()`; the network title comes from `get_bloginfo()`.
 
 = 0.6.3 =
 * Windrose Common 1.3.0: updates come from the public GitHub repositories, without a token (WordPress 7.2 RC no longer has the Secrets API, where the token was kept).

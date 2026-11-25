@@ -49,7 +49,7 @@ While the Privacy module is on and **Block the Bunny Fonts collection** is off, 
 
 ### Make a network (single sites)
 
-Activated on a single site, Windrose Helm only offers **Tools, Make a network** (capability `setup_network`) and a notice linking to it. The screen explains what changes, then asks: subdirectories (always offered) or subdomains (only where core allows them: not in a folder, not localhost or an IP; with a wildcard DNS confirmation), the main site's post addresses (keep the current structure with `/blog` in front, the default, or core's `/blog/%year%/%monthnum%/%day%/%postname%/`), the network title, and a backup confirmation. Then, as core's Network Setup: `install_network()`, `populate_network()` (the current user becomes super admin), the network language, plugins that only work network-wide (Windrose Helm, Anchors, Sabir…) network-active and the others kept on the main site, `windrose_helm_setup` pending, the constants into `wp-config.php` and the rules into `.htaccess` (or the lines to add). Before anything changes, copies of both files are saved next to them, `wp-config.backup.php` (a `.php` file: run, never shown, as it holds the database password) and `.htaccess.backup` (Apache refuses `.ht*` files); never an earlier copy overwritten (a date is added); kept only when the file was changed; the result screen names them and says to delete them once everything works. After logging in again, Set up opens. Refused when network tables already exist or the address has a port.
+Activated on a single site, Windrose Helm only offers **Tools, Make a network** (capability `setup_network`) and a notice linking to it. The screen explains what changes, then asks: subdirectories (always offered) or subdomains (only where core allows them: not in a folder, not localhost or an IP; with a wildcard DNS confirmation), the main site's post addresses (keep the current structure with `/blog` in front, the default, or core's `/blog/%year%/%monthnum%/%day%/%postname%/`), the network title, and a backup confirmation. Then, as core's Network Setup: `install_network()`, `populate_network()` (the current user becomes super admin), the network language, plugins that only work network-wide (Windrose Helm, Anchors, Sabir…) network-active and the others kept on the main site, `windrose_helm_setup` pending, the constants into `wp-config.php` and the rules into `.htaccess` (or the lines to add). `wp-config.php` is read and written through core's Filesystem API, only where WordPress may write files directly (as for its own updates without FTP details; elsewhere the lines to add, never an FTP form), and keeps its permissions. Before anything changes, copies of both files are saved next to them with the same permissions, `wp-config.backup.php` (a `.php` file: run, never shown, as it holds the database password) and `.htaccess.backup` (Apache refuses `.ht*` files); never an earlier copy overwritten (a date is added); kept only when the file was changed; the result screen names them and says to delete them once everything works. After logging in again, Set up opens. Refused when network tables already exist or the address has a port.
 
 WordPress's guess for missing addresses does not find posts whose structure got `/blog` in front, so `Old_Addresses` redirects (301) a missing main-site address to its `/blog/` form when that is a post (main site option `windrose_helm_old_addresses`, set by the conversion, removed on uninstall).
 
@@ -101,6 +101,8 @@ Other files of a release (Common 1.1.0, first used by Windrose Livery's font pac
 
 Since Common 1.2.0 the plugin zip goes through the same asset check as other files (`parse_asset()`: exact download address `…/releases/download/<tag>/<slug>.zip`), and both downloads share one size and sha256 check.
 
+Files (Common 1.4.0): `Files::read( $file )`, `Files::write( $file, $contents )` (an existing file keeps its permissions) and `Files::copy( $from, $to, $overwrite )` go through core's Filesystem API, always its direct method (`Files::direct()`): for uploads, temporary files and the plugin's own files, which WordPress writes with PHP on every host. Not for files of the installation (`wp-config.php`): those follow the host's method.
+
 Hooks: action `windrose_common_loaded( $version )`; filter `windrose_common_update_checks( $enabled, $slug )`.
 
 ## Releasing
@@ -113,7 +115,7 @@ Local zip: `bin/build-zip.sh` writes `dist/windrose-helm.zip`.
 
 ## Development
 
-The admin screens are React (`src/admin` and `src/setup`, built into `build/admin` and `build/setup`, committed) with WordPress components, DataForm and DataViews (`@wordpress/dataviews/wp`, bundled: WordPress does not provide it).
+The admin screens are React (`src/admin` and `src/setup`, built into `build/admin` and `build/setup`, committed) with WordPress components, DataForm and DataViews (`@wordpress/dataviews/wp`, bundled: WordPress does not provide it). After every build, `bin/guard-build.mjs` adds the direct access guard to the generated PHP files (`*.asset.php`); `bin/build-zip.sh` refuses a build without it.
 
 ```
 npm install

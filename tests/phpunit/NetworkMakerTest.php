@@ -33,6 +33,7 @@ class NetworkMakerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( "define( 'PATH_CURRENT_SITE', '/site/' );", $lines );
 		$this->assertStringContainsString( "define( 'SUBDOMAIN_INSTALL', true );", Network_Maker::config_lines( 'example.com', '/', true ) );
 		$this->assertStringContainsString( "define( 'DOMAIN_CURRENT_SITE', 'it\\'s.example' );", Network_Maker::config_lines( "it's.example", '/', false ) );
+		$this->assertSame( "'a\\\\b\\'c'", Network_Maker::php_string( "a\\b'c" ) );
 	}
 
 	public function test_config_lines_go_above_the_stop_editing_line_once(): void {
@@ -87,7 +88,11 @@ class NetworkMakerTest extends WP_UnitTestCase {
 		mkdir( $dir );
 		$file = $dir . '/wp-config.php';
 		file_put_contents( $file, 'first' );
+		chmod( $file, 0600 );
 		$this->assertSame( $dir . '/wp-config.backup.php', Network_Maker::backup( $file, 'wp-config.backup', '.php' ) );
+		// The copy keeps the permissions of the file it copies.
+		clearstatcache();
+		$this->assertSame( 0600, fileperms( $dir . '/wp-config.backup.php' ) & 0777 );
 		file_put_contents( $file, 'second' );
 		$second = Network_Maker::backup( $file, 'wp-config.backup', '.php' );
 		$this->assertMatchesRegularExpression( '#/wp-config\.backup-\d{8}-\d{6}\.php$#', $second );

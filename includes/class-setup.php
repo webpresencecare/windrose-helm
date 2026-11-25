@@ -457,12 +457,12 @@ final class Setup {
 		if ( 'localhost' === $network->domain || false !== filter_var( $network->domain, FILTER_VALIDATE_IP ) ) {
 			return __( 'Subdomains need a domain name; this network’s address is “localhost” or an IP address.', 'windrose-helm' );
 		}
-		$file = self::config_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Plain check of the local configuration file, as core's Network Setup does.
-		if ( ! is_file( $file ) || ! is_writable( $file ) ) {
+		$file       = self::config_path();
+		$filesystem = self::filesystem( $file );
+		if ( null === $filesystem || ! $filesystem->is_file( $file ) || ! $filesystem->is_writable( $file ) ) {
 			return __( 'WordPress cannot change wp-config.php here. To use subdomains, change SUBDOMAIN_INSTALL to true in wp-config.php yourself and replace the rewrite rules (see the documentation).', 'windrose-helm' );
 		}
-		$contents = (string) file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local file.
+		$contents = (string) $filesystem->get_contents( $file );
 		if ( 1 !== preg_match_all( self::subdomain_line_pattern(), $contents ) ) {
 			return __( 'wp-config.php does not hold the line the installer wrote for SUBDOMAIN_INSTALL, so WordPress does not change it. Change it yourself if you want subdomains (see the documentation).', 'windrose-helm' );
 		}
@@ -485,6 +485,49 @@ final class Setup {
 		 * @param string $path Path of wp-config.php.
 		 */
 		return (string) apply_filters( 'windrose_helm_setup_config_path', $path );
+	}
+
+	/**
+	 * Core's Filesystem API for wp-config.php, when WordPress may write files in its folder directly (as for its own
+	 * updates without FTP details). Otherwise null: the screens then show the lines to add by hand, and WordPress never
+	 * asks for FTP details here.
+	 *
+	 * @param string $file File to read or change.
+	 * @return \WP_Filesystem_Base|null
+	 */
+	public static function filesystem( string $file ): ?\WP_Filesystem_Base {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$folder = dirname( $file );
+		if ( 'direct' !== get_filesystem_method( array(), $folder ) || ! WP_Filesystem( false, $folder ) ) {
+			return null;
+		}
+		global $wp_filesystem;
+		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
+	}
+
+	/**
+	 * Writes a file that exists through the Filesystem API, keeping its permissions (wp-config.php is often readable by
+	 * its owner only).
+	 *
+	 * @param \WP_Filesystem_Base $filesystem Filesystem from filesystem().
+	 * @param string              $file       File.
+	 * @param string              $contents   New contents.
+	 * @return bool
+	 */
+	public static function write_file( \WP_Filesystem_Base $filesystem, string $file, string $contents ): bool {
+		return $filesystem->put_contents( $file, $contents, self::file_mode( $filesystem, $file ) );
+	}
+
+	/**
+	 * A file's permissions, to keep them when it is written or copied.
+	 *
+	 * @param \WP_Filesystem_Base $filesystem Filesystem.
+	 * @param string              $file       File.
+	 * @return int|false False when they cannot be read (core then uses its default).
+	 */
+	public static function file_mode( \WP_Filesystem_Base $filesystem, string $file ): int|false {
+		$mode = (int) octdec( $filesystem->getchmod( $file ) );
+		return $mode > 0 ? $mode : false;
 	}
 
 	/**
@@ -571,11 +614,11 @@ final class Setup {
 		if ( '' !== $problem ) {
 			return new WP_Error( 'windrose_helm_setup_subdomains', $problem, array( 'status' => 409 ) );
 		}
-		$file     = self::config_path();
-		$contents = (string) file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local file.
-		$changed  = (string) preg_replace( self::subdomain_line_pattern(), "define( 'SUBDOMAIN_INSTALL', true );", $contents, 1 );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Same file core's Network Setup asks to edit.
-		if ( false === file_put_contents( $file, $changed, LOCK_EX ) ) {
+		$file       = self::config_path();
+		$filesystem = self::filesystem( $file );
+		$contents   = null !== $filesystem ? (string) $filesystem->get_contents( $file ) : '';
+		$changed    = (string) preg_replace( self::subdomain_line_pattern(), "define( 'SUBDOMAIN_INSTALL', true );", $contents, 1 );
+		if ( null === $filesystem || '' === $contents || ! self::write_file( $filesystem, $file, $changed ) ) {
 			return new WP_Error( 'windrose_helm_setup_subdomains', __( 'WordPress could not write wp-config.php.', 'windrose-helm' ), array( 'status' => 500 ) );
 		}
 		update_site_option( 'subdomain_install', 1 );

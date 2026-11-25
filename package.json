@@ -1,11 +1,12 @@
 {
   "name": "windrose-helm",
-  "version": "0.5.0",
+  "version": "0.6.4",
   "private": true,
   "description": "Windrose Helm: network admin screens.",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "build": "wp-scripts build src/admin/index.js --output-path=build/admin && wp-scripts build src/setup/index.js --output-path=build/setup",
+    "postbuild": "node bin/guard-build.mjs",
     "start": "wp-scripts start src/admin/index.js --output-path=build/admin",
     "lint:js": "wp-scripts lint-js src"
   },

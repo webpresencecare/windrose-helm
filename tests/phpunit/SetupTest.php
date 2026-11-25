@@ -391,8 +391,26 @@ class SetupTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'cannot change wp-config.php', Setup::subdomain_problem() );
 	}
 
+	public function test_without_direct_file_access_wp_config_is_left_alone_and_htaccess_still_copied(): void {
+		$file = $this->temporary_config( "<?php\ndefine( 'SUBDOMAIN_INSTALL', false );\n" );
+		// A host where WordPress would need FTP details to write its own files.
+		add_filter( 'filesystem_method', static fn(): string => 'ftpext' );
+		$this->assertNull( Setup::filesystem( $file ) );
+		$this->assertStringContainsString( 'cannot change wp-config.php', Setup::subdomain_problem() );
+		$this->assertSame( '', \Windrose\Helm\Network_Maker::backup( $file, 'wp-config.backup', '.php' ) );
+		// .htaccess is written with plain PHP (core's insert_with_markers()), so its copy is still made.
+		$dir = get_temp_dir() . 'windrose-helm-htaccess-' . wp_generate_password( 8, false );
+		mkdir( $dir );
+		file_put_contents( $dir . '/.htaccess', "# BEGIN WordPress\n# END WordPress\n" );
+		$this->assertSame( $dir . '/.htaccess.backup', \Windrose\Helm\Network_Maker::backup( $dir . '/.htaccess', '.htaccess', '.backup', \Windrose\Common\Files::direct() ) );
+		unlink( $dir . '/.htaccess' );
+		unlink( $dir . '/.htaccess.backup' );
+		rmdir( $dir );
+	}
+
 	public function test_switching_to_subdomains(): void {
 		$file = $this->temporary_config( "<?php\ndefine( 'MULTISITE', true );\ndefine( 'SUBDOMAIN_INSTALL', false );\ndefine( 'DOMAIN_CURRENT_SITE', 'example.org' );\n" );
+		chmod( $file, 0640 );
 		update_option( 'permalink_structure', '/blog/%year%/%monthnum%/%day%/%postname%/' );
 		wp_set_current_user( self::$super_admin );
 
@@ -403,6 +421,9 @@ class SetupTest extends WP_UnitTestCase {
 		// Not Apache (tests run on the command line): the rules come back to show.
 		$this->assertStringContainsString( 'RewriteRule ^wp-admin$ wp-admin/ [R=301,L]', $data['rules'] );
 		$this->assertSame( "<?php\ndefine( 'MULTISITE', true );\ndefine( 'SUBDOMAIN_INSTALL', true );\ndefine( 'DOMAIN_CURRENT_SITE', 'example.org' );\n", file_get_contents( $file ) );
+		// The file keeps its permissions.
+		clearstatcache();
+		$this->assertSame( 0640, fileperms( $file ) & 0777 );
 		$this->assertSame( 1, (int) get_site_option( 'subdomain_install' ) );
 		$this->assertSame( '/%year%/%monthnum%/%day%/%postname%/', get_option( 'permalink_structure' ) );
 		// A second switch is refused: the line is gone.

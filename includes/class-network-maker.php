@@ -20,6 +20,7 @@ declare( strict_types=1 );
 
 namespace Windrose\Helm;
 
+use Windrose\Common\Files;
 use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -184,7 +185,7 @@ final class Network_Maker {
 			self::$result = new WP_Error( 'windrose_helm_network_wildcard', __( 'Subdomains need a wildcard DNS record: confirm it exists, or choose subdirectories.', 'windrose-helm' ) );
 			return;
 		}
-		self::$result = self::make( $type, $addresses, '' === $title ? (string) get_option( 'blogname' ) : $title );
+		self::$result = self::make( $type, $addresses, '' === $title ? get_bloginfo( 'name' ) : $title );
 	}
 
 	/**
@@ -222,7 +223,7 @@ final class Network_Maker {
 		// then changed.
 		$server        = self::server();
 		$config_copy   = self::backup( Setup::config_path(), 'wp-config.backup', '.php' );
-		$htaccess_copy = in_array( $server, array( 'nginx', 'iis' ), true ) ? '' : self::backup( get_home_path() . '.htaccess', '.htaccess', '.backup' );
+		$htaccess_copy = in_array( $server, array( 'nginx', 'iis' ), true ) ? '' : self::backup( get_home_path() . '.htaccess', '.htaccess', '.backup', Files::direct() );
 
 		// As core's Network Setup: the multisite table names (set by problem() above), the tables, the network and its
 		// main site.
@@ -308,20 +309,25 @@ final class Network_Maker {
 	 * Copies a file next to itself before it changes: <name><suffix>, or <name>-<date and time><suffix> when that
 	 * name is taken (an earlier copy is never overwritten).
 	 *
-	 * @param string $file   The file.
-	 * @param string $name   Name of the copy without suffix (wp-config.backup, .htaccess).
-	 * @param string $suffix Suffix (.php, .backup).
+	 * @param string                   $file       The file.
+	 * @param string                   $name       Name of the copy without suffix (wp-config.backup, .htaccess).
+	 * @param string                   $suffix     Suffix (.php, .backup).
+	 * @param \WP_Filesystem_Base|null $filesystem How the file itself is written: by default wp-config.php's way
+	 *                                              (Setup::filesystem()); .htaccess is written with plain PHP by
+	 *                                              core's insert_with_markers(), so its copy uses the direct method.
 	 * @return string Path of the copy, or '' when there was nothing to copy or it failed.
 	 */
-	public static function backup( string $file, string $name, string $suffix ): string {
-		if ( ! is_file( $file ) ) {
+	public static function backup( string $file, string $name, string $suffix, ?\WP_Filesystem_Base $filesystem = null ): string {
+		$filesystem ??= Setup::filesystem( $file );
+		if ( null === $filesystem || ! $filesystem->is_file( $file ) ) {
 			return '';
 		}
 		$target = dirname( $file ) . '/' . $name . $suffix;
-		if ( file_exists( $target ) ) {
+		if ( $filesystem->exists( $target ) ) {
 			$target = dirname( $file ) . '/' . $name . '-' . gmdate( 'Ymd-His' ) . $suffix;
 		}
-		return ! file_exists( $target ) && copy( $file, $target ) ? $target : '';
+		// The copy keeps the file's permissions: a copy of wp-config.php holds the database password too.
+		return $filesystem->copy( $file, $target, false, Setup::file_mode( $filesystem, $file ) ) ? $target : '';
 	}
 
 	/**
@@ -395,12 +401,22 @@ final class Network_Maker {
 				'/* WordPress network (multisite), made by Windrose Helm. */',
 				"define( 'MULTISITE', true );",
 				"define( 'SUBDOMAIN_INSTALL', " . ( $subdomain ? 'true' : 'false' ) . ' );',
-				'define( \'DOMAIN_CURRENT_SITE\', ' . var_export( $domain, true ) . ' );', // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Writes a PHP string literal.
-				'define( \'PATH_CURRENT_SITE\', ' . var_export( $path, true ) . ' );', // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Same.
+				"define( 'DOMAIN_CURRENT_SITE', " . self::php_string( $domain ) . ' );',
+				"define( 'PATH_CURRENT_SITE', " . self::php_string( $path ) . ' );',
 				"define( 'SITE_ID_CURRENT_SITE', 1 );",
 				"define( 'BLOG_ID_CURRENT_SITE', 1 );",
 			)
 		) . "\n";
+	}
+
+	/**
+	 * A PHP string literal in single quotes for wp-config.php: backslashes and quotes escaped.
+	 *
+	 * @param string $value Value.
+	 * @return string
+	 */
+	public static function php_string( string $value ): string {
+		return "'" . addcslashes( $value, "'\\" ) . "'";
 	}
 
 	/**
@@ -435,14 +451,13 @@ final class Network_Maker {
 	 * @return bool
 	 */
 	private static function write_config( string $lines ): bool {
-		$file = Setup::config_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- The local configuration file, as core's Network Setup.
-		if ( ! is_file( $file ) || ! is_writable( $file ) ) {
+		$file       = Setup::config_path();
+		$filesystem = Setup::filesystem( $file );
+		if ( null === $filesystem || ! $filesystem->is_file( $file ) || ! $filesystem->is_writable( $file ) ) {
 			return false;
 		}
-		$changed = self::add_config( (string) file_get_contents( $file ), $lines ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local file.
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Same file core asks to edit.
-		return null !== $changed && false !== file_put_contents( $file, $changed, LOCK_EX );
+		$changed = self::add_config( (string) $filesystem->get_contents( $file ), $lines );
+		return null !== $changed && Setup::write_file( $filesystem, $file, $changed );
 	}
 
 	/**
@@ -551,7 +566,7 @@ final class Network_Maker {
 				</tr>
 				<tr>
 					<th scope="row"><label for="windrose-helm-network-title"><?php esc_html_e( 'Network title', 'windrose-helm' ); ?></label></th>
-					<td><input type="text" id="windrose-helm-network-title" name="title" class="regular-text" value="<?php echo esc_attr( (string) get_option( 'blogname' ) ); ?>"></td>
+					<td><input type="text" id="windrose-helm-network-title" name="title" class="regular-text" value="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"></td>
 				</tr>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Backup', 'windrose-helm' ); ?></th>
