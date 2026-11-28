@@ -29,6 +29,7 @@ declare( strict_types=1 );
 
 namespace Windrose\Helm;
 
+use Windrose\Common\Files;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -493,41 +494,11 @@ final class Setup {
 	 * asks for FTP details here.
 	 *
 	 * @param string $file File to read or change.
-	 * @return \WP_Filesystem_Base|null
+	 * @return \WP_Filesystem_Direct|null Windrose Common's direct filesystem (Files), or null.
 	 */
-	public static function filesystem( string $file ): ?\WP_Filesystem_Base {
+	public static function filesystem( string $file ): ?\WP_Filesystem_Direct {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
-		$folder = dirname( $file );
-		if ( 'direct' !== get_filesystem_method( array(), $folder ) || ! WP_Filesystem( false, $folder ) ) {
-			return null;
-		}
-		global $wp_filesystem;
-		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
-	}
-
-	/**
-	 * Writes a file that exists through the Filesystem API, keeping its permissions (wp-config.php is often readable by
-	 * its owner only).
-	 *
-	 * @param \WP_Filesystem_Base $filesystem Filesystem from filesystem().
-	 * @param string              $file       File.
-	 * @param string              $contents   New contents.
-	 * @return bool
-	 */
-	public static function write_file( \WP_Filesystem_Base $filesystem, string $file, string $contents ): bool {
-		return $filesystem->put_contents( $file, $contents, self::file_mode( $filesystem, $file ) );
-	}
-
-	/**
-	 * A file's permissions, to keep them when it is written or copied.
-	 *
-	 * @param \WP_Filesystem_Base $filesystem Filesystem.
-	 * @param string              $file       File.
-	 * @return int|false False when they cannot be read (core then uses its default).
-	 */
-	public static function file_mode( \WP_Filesystem_Base $filesystem, string $file ): int|false {
-		$mode = (int) octdec( $filesystem->getchmod( $file ) );
-		return $mode > 0 ? $mode : false;
+		return 'direct' === get_filesystem_method( array(), dirname( $file ) ) ? Files::direct() : null;
 	}
 
 	/**
@@ -618,9 +589,23 @@ final class Setup {
 		$filesystem = self::filesystem( $file );
 		$contents   = null !== $filesystem ? (string) $filesystem->get_contents( $file ) : '';
 		$changed    = (string) preg_replace( self::subdomain_line_pattern(), "define( 'SUBDOMAIN_INSTALL', true );", $contents, 1 );
-		if ( null === $filesystem || '' === $contents || ! self::write_file( $filesystem, $file, $changed ) ) {
+		if ( null === $filesystem || '' === $contents ) {
 			return new WP_Error( 'windrose_helm_setup_subdomains', __( 'WordPress could not write wp-config.php.', 'windrose-helm' ), array( 'status' => 500 ) );
 		}
+		// A copy first, or no change: a write that fails half-way leaves the file broken. Kept only then.
+		$copy = Network_Maker::backup( $file, 'wp-config.backup', '.php' );
+		if ( '' === $copy ) {
+			return new WP_Error( 'windrose_helm_setup_subdomains', __( 'WordPress could not save a copy of wp-config.php first, so it did not change the file.', 'windrose-helm' ), array( 'status' => 500 ) );
+		}
+		if ( ! Files::write( $file, $changed ) ) {
+			return new WP_Error(
+				'windrose_helm_setup_subdomains',
+				/* translators: %s: file name of the copy, next to wp-config.php. */
+				sprintf( __( 'WordPress could not finish writing wp-config.php, so the file may be broken. Replace it with its copy %s, next to it (by FTP or your host’s file manager).', 'windrose-helm' ), wp_basename( $copy ) ),
+				array( 'status' => 500 )
+			);
+		}
+		wp_delete_file( $copy );
 		update_site_option( 'subdomain_install', 1 );
 
 		$main = get_main_site_id();

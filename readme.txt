@@ -4,7 +4,7 @@ Tags: multisite, privacy, block themes, updates, site health
 Requires at least: 7.2
 Tested up to: 7.2
 Requires PHP: 8.4
-Stable tag: 0.6.4
+Stable tag: 0.6.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,10 @@ Uninstalling removes the network options of Windrose Helm (switches, blocked hos
 Yes. I write the Windrose plugins and themes with Claude Code, Anthropic's AI coding assistant: I design each feature, test it on real sites and review every release, and every commit written with Claude says so. Independent reviews are welcome on GitHub.
 
 == Changelog ==
+
+= 0.6.5 =
+* Make a network keeps its copy of wp-config.php when writing the file fails (before, the copy was deleted, and a write stopped half-way, on a full disk for example, left no good copy). Switch to subdomains makes the same copy before it writes, kept only if the write fails. If the copy cannot be saved (a full disk, for example), neither changes wp-config.php.
+* Code: wp-config.php is written through Windrose Common's Files, like every other file (one way of keeping file permissions; WordPress's write test runs half as often).
 
 = 0.6.4 =
 * Windrose Common 1.4.0: Files, for reading, writing and copying uploads and temporary files through WordPress's Filesystem API.

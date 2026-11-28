@@ -101,7 +101,7 @@ Other files of a release (Common 1.1.0, first used by Windrose Livery's font pac
 
 Since Common 1.2.0 the plugin zip goes through the same asset check as other files (`parse_asset()`: exact download address `…/releases/download/<tag>/<slug>.zip`), and both downloads share one size and sha256 check.
 
-Files (Common 1.4.0): `Files::read( $file )`, `Files::write( $file, $contents )` (an existing file keeps its permissions) and `Files::copy( $from, $to, $overwrite )` go through core's Filesystem API, always its direct method (`Files::direct()`): for uploads, temporary files and the plugin's own files, which WordPress writes with PHP on every host. Not for files of the installation (`wp-config.php`): those follow the host's method.
+Files (Common 1.4.0): `Files::read( $file )`, `Files::write( $file, $contents )` (an existing file keeps its permissions) and `Files::copy( $from, $to, $overwrite )` go through core's Filesystem API, always its direct method (`Files::direct()`): for uploads, temporary files and the plugin's own files, which WordPress writes with PHP on every host. Files of the installation (`wp-config.php`) only after `get_filesystem_method()` says `direct` for their folder (Helm's `Setup::filesystem()`): elsewhere Helm shows the lines to add by hand.
 
 Hooks: action `windrose_common_loaded( $version )`; filter `windrose_common_update_checks( $enabled, $slug )`.
 

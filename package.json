@@ -1,6 +1,6 @@
 {
   "name": "windrose-helm",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "private": true,
   "description": "Windrose Helm: network admin screens.",
   "license": "GPL-2.0-or-later",

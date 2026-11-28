@@ -421,9 +421,10 @@ class SetupTest extends WP_UnitTestCase {
 		// Not Apache (tests run on the command line): the rules come back to show.
 		$this->assertStringContainsString( 'RewriteRule ^wp-admin$ wp-admin/ [R=301,L]', $data['rules'] );
 		$this->assertSame( "<?php\ndefine( 'MULTISITE', true );\ndefine( 'SUBDOMAIN_INSTALL', true );\ndefine( 'DOMAIN_CURRENT_SITE', 'example.org' );\n", file_get_contents( $file ) );
-		// The file keeps its permissions.
+		// The file keeps its permissions, and the copy made before writing (it holds the password) is gone.
 		clearstatcache();
 		$this->assertSame( 0640, fileperms( $file ) & 0777 );
+		$this->assertFileDoesNotExist( dirname( $file ) . '/wp-config.backup.php' );
 		$this->assertSame( 1, (int) get_site_option( 'subdomain_install' ) );
 		$this->assertSame( '/%year%/%monthnum%/%day%/%postname%/', get_option( 'permalink_structure' ) );
 		// A second switch is refused: the line is gone.

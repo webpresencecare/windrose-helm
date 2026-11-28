@@ -194,7 +194,7 @@ final class Network_Maker {
 	 * @param string $type      subdirectory or subdomain.
 	 * @param string $addresses keep or default (the main site's post addresses).
 	 * @param string $title     Network title.
-	 * @return array{config: string, rules: string, server: string, warning: string, backups: list<string>}|WP_Error
+	 * @return array{config: string, rules: string, server: string, warning: string, backups: list<string>, restore: string}|WP_Error
 	 */
 	public static function make( string $type, string $addresses, string $title ) {
 		$problem = self::problem();
@@ -269,12 +269,21 @@ final class Network_Maker {
 			'server'  => $server,
 			'warning' => $warning,
 			'backups' => array(),
+			'restore' => '',
 		);
 		$lines  = self::config_lines( $domain, $path, $subdomain );
-		if ( self::write_config( $lines ) ) {
+		// No copy, no write: the lines are then shown to add by hand.
+		$written = '' === $config_copy ? null : self::write_config( $lines );
+		if ( true === $written ) {
 			$report['backups'][] = $config_copy;
 		} else {
-			self::forget( $config_copy );
+			// Not tried: the copy is not needed. Tried and failed: the file may be half written, the copy stays.
+			if ( null === $written ) {
+				self::forget( $config_copy );
+			} else {
+				$report['backups'][] = $config_copy;
+				$report['restore']   = $config_copy;
+			}
 			$report['config'] = $lines;
 		}
 		$rules = Setup::htaccess_rules( $path, $subdomain );
@@ -327,7 +336,8 @@ final class Network_Maker {
 			$target = dirname( $file ) . '/' . $name . '-' . gmdate( 'Ymd-His' ) . $suffix;
 		}
 		// The copy keeps the file's permissions: a copy of wp-config.php holds the database password too.
-		return $filesystem->copy( $file, $target, false, Setup::file_mode( $filesystem, $file ) ) ? $target : '';
+		$mode = (int) octdec( $filesystem->getchmod( $file ) );
+		return $filesystem->copy( $file, $target, false, $mode > 0 ? $mode : false ) ? $target : '';
 	}
 
 	/**
@@ -448,16 +458,17 @@ final class Network_Maker {
 	 * Writes the constants into wp-config.php when PHP may change it.
 	 *
 	 * @param string $lines Lines to add.
-	 * @return bool
+	 * @return bool|null True when written, false when the write failed (the file may be half written), null when it was
+	 *                   not tried (no direct access, or no place for the lines).
 	 */
-	private static function write_config( string $lines ): bool {
+	private static function write_config( string $lines ): ?bool {
 		$file       = Setup::config_path();
 		$filesystem = Setup::filesystem( $file );
 		if ( null === $filesystem || ! $filesystem->is_file( $file ) || ! $filesystem->is_writable( $file ) ) {
-			return false;
+			return null;
 		}
 		$changed = self::add_config( (string) $filesystem->get_contents( $file ), $lines );
-		return null !== $changed && Setup::write_file( $filesystem, $file, $changed );
+		return null === $changed ? null : Files::write( $file, $changed );
 	}
 
 	/**
@@ -589,6 +600,19 @@ final class Network_Maker {
 		wp_admin_notice( esc_html__( 'This site is now the main site of a network.', 'windrose-helm' ), array( 'type' => 'success' ) );
 		if ( '' !== $result['warning'] ) {
 			wp_admin_notice( esc_html( (string) $result['warning'] ), array( 'type' => 'warning' ) );
+		}
+		if ( '' !== (string) ( $result['restore'] ?? '' ) ) {
+			wp_admin_notice(
+				wp_kses(
+					sprintf(
+						/* translators: %s: file name of the copy of wp-config.php. */
+						__( 'WordPress could not finish writing wp-config.php, so the file may be broken. First replace it with its copy %s (by FTP or your host’s file manager), then add the lines below.', 'windrose-helm' ),
+						'<code>' . esc_html( basename( (string) $result['restore'] ) ) . '</code>'
+					),
+					array( 'code' => array() )
+				),
+				array( 'type' => 'error' )
+			);
 		}
 		if ( '' !== $result['config'] ) {
 			printf(

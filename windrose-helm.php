@@ -3,7 +3,7 @@
  * Plugin Name:       Windrose Helm
  * Plugin URI:        https://www.webpresencecare.com/plugins
  * Description:       The base of the Windrose Suite: block-only defaults, privacy switches, blocked hosts and a log of outgoing requests, Bunny Fonts in the Font Library, a wordpress.org switch, updates for Windrose plugins, recommended plugins and health checks.
- * Version:           0.6.4
+ * Version:           0.6.5
  * Requires at least: 7.2
  * Requires PHP:      8.4
  * Author:            Patricia BT
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WINDROSE_HELM_VERSION', '0.6.4' );
+define( 'WINDROSE_HELM_VERSION', '0.6.5' );
 define( 'WINDROSE_HELM_FILE', __FILE__ );
 define( 'WINDROSE_HELM_DIR', __DIR__ );
 
